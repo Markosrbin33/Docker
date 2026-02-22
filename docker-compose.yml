@@ -1,0 +1,46 @@
+services:
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    networks:
+      - mynetwork-front
+    depends_on:
+      - backend
+      
+
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    networks:
+      - mynetwork-front
+      - mynetwork-back
+    depends_on:
+      - database
+    environment:
+      - DB_HOST=database
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=monapp
+
+  database:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=monapp
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - mynetwork-back
+
+volumes:
+  mysql_data:
+
+networks:
+  mynetwork-front:
+    driver: bridge
+  mynetwork-back:
+    driver: bridge

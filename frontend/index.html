@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Partiel Docker AMN</title>
+</head>
+<body>
+  <h1>Partie front</h1>
+  <button onclick="ConnexionBackend()">Backend</button>
+  <p id="reponse"></p>
+
+  <script>
+    function ConnexionBackend() {
+     fetch('http://localhost:3000/api/message')
+       .then(res => res.json())
+       .then(data => {
+         document.getElementById('response').innerText = data.message;
+       });
+    }
+  </script>
+</body>
+</html> 
