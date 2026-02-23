@@ -1,17 +1,18 @@
-# 1. Image de base
-FROM node:20
+FROM node:18-alpine
 
-# 2. Définir le répertoire de travail
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# 3. Copier tout le code du back
+# Copie des fichiers de dépendances
+COPY package*.json ./
+
+# Installation des dépendances
+RUN npm ci --only=production
+
+# Copie du code source
 COPY . .
 
-# 4. Installer les dépendances
-RUN npm install
-
-# 5. Exposer le port 3000
+# Exposition du port
 EXPOSE 3000
 
-# 6. Lancer le serveur Node (PID 1)
-CMD ["node", "server.js"]
+# Lancement de l'application
+CMD ["node", "index.js"]

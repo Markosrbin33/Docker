@@ -1,46 +1,78 @@
-services:
+networks:
+  backend-network:
+    driver: bridge
+  frontend-network:
+    driver: bridge
 
-  frontend:
-    build: ./frontend
-    ports:
-      - "80:80"
+volumes:
+  mysql-data:  # Changé de postgres-data à mysql-data
+  # pgadmin-data:  # À supprimer car pgAdmin ne fonctionne pas avec MySQL
+
+services:
+  database:
+    image: mysql:8.0  # Changé de postgres:15-alpine à mysql:8.0
+    container_name: app-database
+    restart: unless-stopped
     networks:
-      - mynetwork-front
-    depends_on:
-      - backend
-      
+      - backend-network
+    volumes:
+      - mysql-data:/var/lib/mysql  # Changé le chemin pour MySQL
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      MYSQL_DATABASE: monapp  # Correspond à votre DB_NAME
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: root  # Correspond à votre mot de passe root
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build: ./backend
-    ports:
-      - "3000:3000"
+    container_name: app-backend
+    restart: unless-stopped
     networks:
-      - mynetwork-front
-      - mynetwork-back
+      - backend-network
+      - frontend-network
+    environment:
+      DB_HOST: database
+      DB_USER: root  # Changé de user à root pour correspondre à votre code
+      DB_PASSWORD: root  # Correspond à MYSQL_ROOT_PASSWORD
+      DB_NAME: monapp  # Correspond à votre nom de BDD
+    depends_on:
+      database:
+        condition: service_healthy
+    expose:
+      - "3000"
+
+  frontend:
+    build: ./frontend
+    container_name: app-frontend
+    restart: unless-stopped
+    networks:
+      - frontend-network
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  # Optionnel : phpMyAdmin pour MySQL (au lieu de pgAdmin)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: app-phpmyadmin
+    restart: unless-stopped
+    networks:
+      - backend-network
+    environment:
+      PMA_HOST: database
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+      UPLOAD_LIMIT: 100M
+    ports:
+      - "8080:80"
     depends_on:
       - database
-    environment:
-      - DB_HOST=database
-      - DB_USER=root
-      - DB_PASSWORD=root
-      - DB_NAME=monapp
-
-  database:
-    image: mysql:8.0
-    environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=monapp
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - mynetwork-back
-
-volumes:
-  mysql_data:
-
-networks:
-  mynetwork-front:
-    driver: bridge
-  mynetwork-back:
-    driver: bridge

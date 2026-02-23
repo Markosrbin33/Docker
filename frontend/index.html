@@ -1,23 +1,107 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Partiel Docker AMN</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Application Full Stack</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        .container { max-width: 800px; margin: auto; padding: 20px; }
+        h1 { color: #333; }
+        .info { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+        #user-list { margin-top: 20px; }
+        .user-item { background: #e9e9e9; margin: 5px 0; padding: 10px; border-radius: 3px; }
+        form { margin: 20px 0; }
+        input { padding: 8px; margin: 5px; }
+        button { padding: 8px 15px; background: #007bff; color: white; border: none; cursor: pointer; }
+    </style>
 </head>
 <body>
-  <h1>Partie front</h1>
-  <button onclick="ConnexionBackend()">Backend</button>
-  <p id="reponse"></p>
+    <div class="container">
+        <h1>🚀 Application Full Stack Conteneurisée</h1>
+        <div class="info" id="api-status">Vérification de la connexion à l'API...</div>
+        <div class="info" id="message-from-api">Chargement du message...</div>
 
-  <script>
-    function ConnexionBackend() {
-     fetch('http://localhost:3000/api/message')
-       .then(res => res.json())
-       .then(data => {
-         document.getElementById('response').innerText = data.message;
-       });
-    }
-  </script>
+<!-- Et dans la section script, ajoutez -->
+<script>
+    // Récupérer le message depuis l'API
+    fetch('/api/message')
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('message-from-api').innerHTML = 
+                '📩 Message de la BDD : ' + data.message;
+        })
+        .catch(err => {
+            document.getElementById('message-from-api').innerHTML = 
+                '❌ Impossible de charger le message';
+        });
+</script>
+        
+        <h2>Liste des utilisateurs</h2>
+        <div id="user-list">Chargement...</div>
+        
+        <h2>Ajouter un utilisateur</h2>
+        <form id="user-form">
+            <input type="text" id="name" placeholder="Nom" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <button type="submit">Ajouter</button>
+        </form>
+    </div>
+
+    <script>
+        const API_URL = '/api';  // Utilise le reverse proxy NGINX
+
+        // Vérifier la connexion à l'API
+        fetch(API_URL)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('api-status').innerHTML = '✅ API connectée : ' + data.message;
+            })
+            .catch(err => {
+                document.getElementById('api-status').innerHTML = '❌ API non disponible';
+            });
+
+        // Charger les utilisateurs
+        function loadUsers() {
+            fetch(`${API_URL}/users`)
+                .then(res => res.json())
+                .then(users => {
+                    const userList = document.getElementById('user-list');
+                    if (users.length === 0) {
+                        userList.innerHTML = '<p>Aucun utilisateur</p>';
+                    } else {
+                        userList.innerHTML = users.map(user => 
+                            `<div class="user-item">${user.name} - ${user.email}</div>`
+                        ).join('');
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('user-list').innerHTML = 'Erreur de chargement';
+                });
+        }
+
+        loadUsers();
+
+        // Ajouter un utilisateur
+        document.getElementById('user-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+
+            fetch(`${API_URL}/users`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email })
+            })
+            .then(res => res.json())
+            .then(user => {
+                loadUsers();
+                document.getElementById('user-form').reset();
+            })
+            .catch(err => {
+                alert('Erreur lors de l\'ajout');
+            });
+        });
+    </script>
 </body>
-</html> 
+</html>
