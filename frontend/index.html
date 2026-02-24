@@ -1,107 +1,81 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Application Full Stack</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-        .container { max-width: 800px; margin: auto; padding: 20px; }
-        h1 { color: #333; }
-        .info { background: #f4f4f4; padding: 10px; border-radius: 5px; }
-        #user-list { margin-top: 20px; }
-        .user-item { background: #e9e9e9; margin: 5px 0; padding: 10px; border-radius: 3px; }
-        form { margin: 20px 0; }
-        input { padding: 8px; margin: 5px; }
-        button { padding: 8px 15px; background: #007bff; color: white; border: none; cursor: pointer; }
-    </style>
+    <title>App Full Stack</title>
 </head>
 <body>
-    <div class="container">
-        <h1>🚀 Application Full Stack Conteneurisée</h1>
-        <div class="info" id="api-status">Vérification de la connexion à l'API...</div>
-        <div class="info" id="message-from-api">Chargement du message...</div>
-
-<!-- Et dans la section script, ajoutez -->
-<script>
-    // Récupérer le message depuis l'API
-    fetch('/api/message')
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById('message-from-api').innerHTML = 
-                '📩 Message de la BDD : ' + data.message;
-        })
-        .catch(err => {
-            document.getElementById('message-from-api').innerHTML = 
-                '❌ Impossible de charger le message';
-        });
-</script>
-        
-        <h2>Liste des utilisateurs</h2>
-        <div id="user-list">Chargement...</div>
-        
-        <h2>Ajouter un utilisateur</h2>
-        <form id="user-form">
-            <input type="text" id="name" placeholder="Nom" required>
-            <input type="email" id="email" placeholder="Email" required>
-            <button type="submit">Ajouter</button>
-        </form>
+    <h1>🚀 Application Full Stack</h1>
+    
+    <div>
+        <h2>Message</h2>
+        <div id="message">Chargement...</div>
+        <button onclick="getMessage()">Rafraîchir</button>
     </div>
+    
+    <div>
+        <h2>Utilisateurs</h2>
+        <div id="users">Chargement...</div>
+        <button onclick="getUsers()">Rafraîchir</button>
+    </div>
+    
+    <div>
+        <h2>Ajouter un utilisateur</h2>
+        <input id="name" placeholder="Nom">
+        <input id="email" placeholder="Email">
+        <button onclick="addUser()">Ajouter</button>
+    </div>
+    
+    <div id="result" style="margin-top:20px; padding:10px; background:#f0f0f0;"></div>
 
     <script>
-        const API_URL = '/api';  // Utilise le reverse proxy NGINX
-
-        // Vérifier la connexion à l'API
-        fetch(API_URL)
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('api-status').innerHTML = '✅ API connectée : ' + data.message;
-            })
-            .catch(err => {
-                document.getElementById('api-status').innerHTML = '❌ API non disponible';
-            });
-
-        // Charger les utilisateurs
-        function loadUsers() {
-            fetch(`${API_URL}/users`)
+        function getMessage() {
+            fetch('/message')
                 .then(res => res.json())
-                .then(users => {
-                    const userList = document.getElementById('user-list');
-                    if (users.length === 0) {
-                        userList.innerHTML = '<p>Aucun utilisateur</p>';
-                    } else {
-                        userList.innerHTML = users.map(user => 
-                            `<div class="user-item">${user.name} - ${user.email}</div>`
-                        ).join('');
-                    }
+                .then(data => {
+                    document.getElementById('message').innerText = data.message || 'Pas de message';
                 })
                 .catch(err => {
-                    document.getElementById('user-list').innerHTML = 'Erreur de chargement';
+                    document.getElementById('message').innerText = 'Erreur';
                 });
         }
 
-        loadUsers();
+        function getUsers() {
+            fetch('/users')
+                .then(res => res.json())
+                .then(data => {
+                    let html = '<ul>';
+                    data.forEach(u => html += `<li>${u.name} - ${u.email}</li>`);
+                    html += '</ul>';
+                    document.getElementById('users').innerHTML = html;
+                })
+                .catch(err => {
+                    document.getElementById('users').innerHTML = 'Erreur';
+                });
+        }
 
-        // Ajouter un utilisateur
-        document.getElementById('user-form').addEventListener('submit', (e) => {
-            e.preventDefault();
+        function addUser() {
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
-
-            fetch(`${API_URL}/users`, {
+            
+            fetch('/users', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email })
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, email})
             })
             .then(res => res.json())
-            .then(user => {
-                loadUsers();
-                document.getElementById('user-form').reset();
+            .then(data => {
+                document.getElementById('result').innerHTML = '✅ Ajouté: ' + JSON.stringify(data);
+                getUsers();
             })
             .catch(err => {
-                alert('Erreur lors de l\'ajout');
+                document.getElementById('result').innerHTML = '❌ Erreur: ' + err;
             });
-        });
+        }
+
+        // Chargement initial
+        getMessage();
+        getUsers();
     </script>
 </body>
 </html>
